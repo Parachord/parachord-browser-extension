@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 300px;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      background: #f3f4f6;
+      color: #111827;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .header-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .header-icon img {
+      width: 100%;
+      height: 100%;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px;
+      background: #ffffff;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.03);
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+      flex-shrink: 0;
+    }
+
+    .status-dot.connected {
+      background: #22c55e;
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+    }
+
+    .status-text {
+      font-size: 13px;
+      color: #6b7280;
+      font-weight: 500;
+    }
+
+    .status-text.connected {
+      color: #22c55e;
+    }
+
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    button {
+      background: #7c3aed;
+      color: white;
+      border: none;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background-color 0.15s ease, transform 0.1s ease;
+    }
+
+    button:hover {
+      background: #6d28d9;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button:disabled {
+      background: #d1d5db;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    button svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    .settings {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #e5e7eb;
+    }
+
+    .settings-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #ffffff;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.03);
+    }
+
+    .setting-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .setting-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .setting-icon.spotify {
+      background: #1DB954;
+    }
+
+    .setting-icon.applemusic {
+      background: #fc3c44;
+    }
+
+    .setting-icon svg {
+      width: 16px;
+      height: 16px;
+      fill: white;
+    }
+
+    .setting-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .setting-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #111827;
+    }
+
+    .setting-sublabel {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 1px;
+    }
+
+    .toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #d1d5db;
+      transition: background-color 0.2s ease;
+      border-radius: 24px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: transform 0.2s ease;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    }
+
+    .toggle input:checked + .toggle-slider {
+      background: #7c3aed;
+    }
+
+    .toggle input:checked + .toggle-slider:before {
+      transform: translateX(20px);
+    }
+
+    .info {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px solid #e5e7eb;
+      font-size: 11px;
+      color: #9ca3af;
+      text-align: center;
+    }
+
+    .info a {
+      color: #7c3aed;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .info a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-icon">
+      <img src="icons/icon48.png" alt="Parachord">
+    </div>
+    <h1>Parachord</h1>
+  </div>
+
+  <div class="status">
+    <div class="status-dot" id="status-dot"></div>
+    <span class="status-text" id="status-text">Connecting...</span>
+  </div>
+
+  <div class="actions">
+    <button id="send-url" disabled>
+      <svg id="send-url-icon" viewBox="0 0 24 24">
+        <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+      </svg>
+      <span id="send-url-text">Play Next</span>
+    </button>
+  </div>
+
+  <div class="settings">
+    <div class="settings-title">Link Interception</div>
+
+    <div class="setting-row">
+      <div class="setting-info">
+        <div class="setting-icon spotify">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+          </svg>
+        </div>
+        <div class="setting-text">
+          <div class="setting-label">Spotify</div>
+          <div class="setting-sublabel">Intercept app links</div>
+        </div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="spotify-intercept" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="setting-row">
+      <div class="setting-info">
+        <div class="setting-icon applemusic">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+          </svg>
+        </div>
+        <div class="setting-text">
+          <div class="setting-label">Apple Music</div>
+          <div class="setting-sublabel">Intercept app links</div>
+        </div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="applemusic-intercept" checked>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="info">
+    Make sure <a href="#">Parachord</a> desktop is running
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

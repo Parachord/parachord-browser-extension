@@ -1,0 +1,14 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background with rounded corners -->
+  <rect width="128" height="128" rx="26" fill="#1f2937"/>
+  <!-- The 'p' icon as a simplified path - matches the PNG icons -->
+  <g transform="translate(16, 10) scale(0.75)" fill="white">
+    <!-- Circular part of 'p' -->
+    <path d="M104 52C104 70.7777 91.81 87.5 73.032 87.5C54.2545 87.5 40 70.7777 40 52C40 33.2223 54.2545 17.5 73.032 17.5C91.81 17.5 104 33.2223 104 52Z" fill="#1f2937"/>
+    <path d="M72.5 4.5C96.725 4.5 117.5 25.3462 117.5 52.5C117.5 79.6538 96.725 100.5 72.5 100.5C48.2754 100.5 27.5 79.6538 27.5 52.5C27.5 25.3462 48.2754 4.5 72.5 4.5Z" stroke="white" stroke-width="27"/>
+    <!-- Stem of 'p' -->
+    <rect x="14" y="50" width="25" height="95" fill="white"/>
+    <!-- Parachute lines element -->
+    <path d="M29.2725 92.048C30.1887 94.145 33.0216 94.485 34.4082 92.664L72 43.29V158H-31V-13H-16.6084L29.2725 92.048Z" fill="white"/>
+  </g>
+</svg>
