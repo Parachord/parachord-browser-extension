@@ -257,32 +257,57 @@
 
     // Function to find and click skip button
     function trySkipAd() {
-      // YouTube uses various skip button selectors
-      const skipButton = document.querySelector('.ytp-skip-ad-button') ||
-                         document.querySelector('.ytp-ad-skip-button') ||
-                         document.querySelector('.ytp-ad-skip-button-modern') ||
-                         document.querySelector('[class*="skip-button"]') ||
-                         document.querySelector('button.ytp-ad-skip-button-modern');
+      // YouTube uses various skip button selectors - try multiple approaches
+      const skipSelectors = [
+        '.ytp-ad-skip-button-text',           // The clickable text element inside skip button
+        '.ytp-ad-skip-button',                // Standard skip button
+        '.ytp-ad-skip-button-modern',         // Modern skip button variant
+        '.ytp-skip-ad-button',                // Alternative class name
+        'button.ytp-ad-skip-button-modern',   // Button with modern class
+        '.ytp-ad-skip-button-container button', // Button inside container
+        '[class*="skip-button"]',             // Any element with skip-button in class
+      ];
 
-      if (skipButton && skipButton.offsetWidth > 0 && skipButton.offsetHeight > 0) { // Check if visible
-        console.log('[Parachord] 🚫 Found skip ad button, clicking...');
-        skipButton.click();
-        return true;
-      }
-
-      // Also check for "Skip Ads" text button (newer YouTube UI)
-      const skipButtons = document.querySelectorAll('button');
-      for (const btn of skipButtons) {
-        if (btn.textContent.includes('Skip') && btn.offsetWidth > 0 && btn.offsetHeight > 0) {
-          const isAdSkip = btn.closest('.ytp-ad-module') ||
-                          btn.closest('.video-ads') ||
-                          btn.className.includes('ad');
-          if (isAdSkip) {
-            console.log('[Parachord] 🚫 Found skip button by text, clicking...');
-            btn.click();
+      // Try each selector and click ALL matching visible elements
+      for (const selector of skipSelectors) {
+        const elements = document.querySelectorAll(selector);
+        for (const element of elements) {
+          if (element.offsetWidth > 0 && element.offsetHeight > 0) {
+            console.log('[Parachord] 🚫 Found skip ad button with selector:', selector);
+            element.click();
+            // Also try clicking child elements (sometimes click handler is on inner element)
+            const clickableChild = element.querySelector('button, span, div');
+            if (clickableChild) {
+              clickableChild.click();
+            }
             return true;
           }
         }
+      }
+
+      // Also check for "Skip Ads" text button (newer YouTube UI) - look for any clickable with Skip text
+      const allClickables = document.querySelectorAll('button, [role="button"], .ytp-ad-text');
+      for (const el of allClickables) {
+        if (el.textContent && el.textContent.includes('Skip') && el.offsetWidth > 0 && el.offsetHeight > 0) {
+          const isAdSkip = el.closest('.ytp-ad-module') ||
+                          el.closest('.video-ads') ||
+                          el.closest('[class*="ad-"]') ||
+                          (el.className && el.className.includes('ad'));
+          if (isAdSkip) {
+            console.log('[Parachord] 🚫 Found skip button by text, clicking...');
+            el.click();
+            return true;
+          }
+        }
+      }
+
+      // Try to close overlay ads
+      const overlayClose = document.querySelector('.ytp-ad-overlay-close-button') ||
+                           document.querySelector('.ytp-ad-overlay-close-container button');
+      if (overlayClose && overlayClose.offsetWidth > 0 && overlayClose.offsetHeight > 0) {
+        console.log('[Parachord] 🚫 Found overlay ad close button, clicking...');
+        overlayClose.click();
+        return true;
       }
 
       return false;
