@@ -57,11 +57,20 @@
 
   // Set up media event listeners
   function setupMediaListeners(media) {
+    // Helper to get duration in seconds (0 if not available)
+    function getDuration() {
+      if (media.duration && isFinite(media.duration) && media.duration > 0) {
+        return Math.round(media.duration);
+      }
+      return 0;
+    }
+
     media.addEventListener('play', () => {
       chrome.runtime.sendMessage({
         type: 'event',
         event: 'playing',
-        site: site
+        site: site,
+        duration: getDuration()
       }).catch(() => {});
     });
 
@@ -83,6 +92,19 @@
           site: site
         }).catch(() => {});
       });
+
+      // Send duration when it becomes available (for non-YouTube sites)
+      media.addEventListener('durationchange', () => {
+        const duration = getDuration();
+        if (duration > 0) {
+          chrome.runtime.sendMessage({
+            type: 'event',
+            event: 'duration',
+            site: site,
+            duration: duration
+          }).catch(() => {});
+        }
+      });
     }
 
     // Report initial state if already playing
@@ -90,7 +112,8 @@
       chrome.runtime.sendMessage({
         type: 'event',
         event: 'playing',
-        site: site
+        site: site,
+        duration: getDuration()
       }).catch(() => {});
     }
   }
@@ -352,12 +375,25 @@
       }
 
       // Track video duration (excluding ads)
+      let lastSentDuration = 0;
       media.addEventListener('durationchange', () => {
         checkVideoChange();
         // Only update duration when not showing an ad
         if (!isAdPlaying() && media.duration > 0 && isFinite(media.duration)) {
           videoDuration = media.duration;
+          const roundedDuration = Math.round(videoDuration);
           console.log('[Parachord] Video duration:', videoDuration);
+
+          // Send duration to desktop app (only if it changed significantly)
+          if (roundedDuration !== lastSentDuration && roundedDuration > 0) {
+            lastSentDuration = roundedDuration;
+            chrome.runtime.sendMessage({
+              type: 'event',
+              event: 'duration',
+              site: site,
+              duration: roundedDuration
+            }).catch(() => {});
+          }
         }
       });
 
