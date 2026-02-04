@@ -57,20 +57,11 @@
 
   // Set up media event listeners
   function setupMediaListeners(media) {
-    // Helper to get duration in seconds (0 if not available)
-    function getDuration() {
-      if (media.duration && isFinite(media.duration) && media.duration > 0) {
-        return Math.round(media.duration);
-      }
-      return 0;
-    }
-
     media.addEventListener('play', () => {
       chrome.runtime.sendMessage({
         type: 'event',
         event: 'playing',
-        site: site,
-        duration: getDuration()
+        site: site
       }).catch(() => {});
     });
 
@@ -92,19 +83,6 @@
           site: site
         }).catch(() => {});
       });
-
-      // Send duration when it becomes available (for non-YouTube sites)
-      media.addEventListener('durationchange', () => {
-        const duration = getDuration();
-        if (duration > 0) {
-          chrome.runtime.sendMessage({
-            type: 'event',
-            event: 'duration',
-            site: site,
-            duration: duration
-          }).catch(() => {});
-        }
-      });
     }
 
     // Report initial state if already playing
@@ -112,8 +90,7 @@
       chrome.runtime.sendMessage({
         type: 'event',
         event: 'playing',
-        site: site,
-        duration: getDuration()
+        site: site
       }).catch(() => {});
     }
   }
@@ -148,82 +125,7 @@
     }
   });
 
-  // Auto-play for Bandcamp tracks
-  function autoPlayBandcamp(retryCount = 0) {
-    console.log('[Parachord] Attempting Bandcamp auto-play, attempt:', retryCount + 1);
-
-    // Bandcamp has several play button variants:
-    // 1. Big play button on track/album pages: .playbutton or .play-btn inside inline_player
-    // 2. The play button is often a div inside an anchor with role="button"
-    const playButton = document.querySelector('.inline_player .playbutton') ||
-                       document.querySelector('.inline_player .play-btn') ||
-                       document.querySelector('.playbutton') ||
-                       document.querySelector('.play_button.playing') || // Already has playing class but paused
-                       document.querySelector('.play_button') ||
-                       document.querySelector('[role="button"][aria-label*="Play"]') ||
-                       document.querySelector('.play-btn') ||
-                       document.querySelector('a.play-button') ||
-                       document.querySelector('button.play');
-
-    if (playButton) {
-      console.log('[Parachord] Found Bandcamp play button:', playButton.className);
-
-      // Try multiple click approaches
-      playButton.click();
-
-      // Try dispatching mouse events (sometimes more effective)
-      const clickEvent = new MouseEvent('click', {
-        bubbles: true,
-        cancelable: true,
-        view: window
-      });
-      playButton.dispatchEvent(clickEvent);
-
-      // Also try clicking any child div (Bandcamp sometimes has the listener on child)
-      const childDiv = playButton.querySelector('div');
-      if (childDiv) {
-        childDiv.click();
-        childDiv.dispatchEvent(clickEvent);
-      }
-
-      // If play button has "busy" class, it means it's trying to load - that's good
-      if (playButton.classList.contains('busy')) {
-        console.log('[Parachord] Play button is loading (busy state)');
-        return true;
-      }
-
-      return true;
-    }
-
-    // Try the big album art play overlay
-    const bigPlayButton = document.querySelector('.play-button') ||
-                          document.querySelector('.tralbum-play-button') ||
-                          document.querySelector('#big_play_button');
-    if (bigPlayButton) {
-      console.log('[Parachord] Found Bandcamp big play button');
-      bigPlayButton.click();
-      return true;
-    }
-
-    // Fallback: try to play the audio element directly
-    const audio = document.querySelector('audio');
-    if (audio && audio.src) {
-      console.log('[Parachord] Auto-playing Bandcamp audio element directly');
-      audio.play().catch(err => {
-        console.log('[Parachord] Auto-play blocked:', err.message);
-      });
-      return true;
-    }
-
-    // Retry a few times since Bandcamp loads dynamically
-    if (retryCount < 5) {
-      setTimeout(() => autoPlayBandcamp(retryCount + 1), 500);
-    } else {
-      console.log('[Parachord] Could not find Bandcamp play button after retries');
-    }
-
-    return false;
-  }
+  // NOTE: Bandcamp auto-play removed - now using embedded player in Electron window
 
   // YouTube Ad Skipper - automatically clicks "Skip Ad" button when it appears
   // Also handles end-of-video ads to ensure proper track advancement
@@ -280,57 +182,32 @@
 
     // Function to find and click skip button
     function trySkipAd() {
-      // YouTube uses various skip button selectors - try multiple approaches
-      const skipSelectors = [
-        '.ytp-ad-skip-button-text',           // The clickable text element inside skip button
-        '.ytp-ad-skip-button',                // Standard skip button
-        '.ytp-ad-skip-button-modern',         // Modern skip button variant
-        '.ytp-skip-ad-button',                // Alternative class name
-        'button.ytp-ad-skip-button-modern',   // Button with modern class
-        '.ytp-ad-skip-button-container button', // Button inside container
-        '[class*="skip-button"]',             // Any element with skip-button in class
-      ];
+      // YouTube uses various skip button selectors
+      const skipButton = document.querySelector('.ytp-skip-ad-button') ||
+                         document.querySelector('.ytp-ad-skip-button') ||
+                         document.querySelector('.ytp-ad-skip-button-modern') ||
+                         document.querySelector('[class*="skip-button"]') ||
+                         document.querySelector('button.ytp-ad-skip-button-modern');
 
-      // Try each selector and click ALL matching visible elements
-      for (const selector of skipSelectors) {
-        const elements = document.querySelectorAll(selector);
-        for (const element of elements) {
-          if (element.offsetWidth > 0 && element.offsetHeight > 0) {
-            console.log('[Parachord] 🚫 Found skip ad button with selector:', selector);
-            element.click();
-            // Also try clicking child elements (sometimes click handler is on inner element)
-            const clickableChild = element.querySelector('button, span, div');
-            if (clickableChild) {
-              clickableChild.click();
-            }
-            return true;
-          }
-        }
+      if (skipButton && skipButton.offsetWidth > 0 && skipButton.offsetHeight > 0) { // Check if visible
+        console.log('[Parachord] 🚫 Found skip ad button, clicking...');
+        skipButton.click();
+        return true;
       }
 
-      // Also check for "Skip Ads" text button (newer YouTube UI) - look for any clickable with Skip text
-      const allClickables = document.querySelectorAll('button, [role="button"], .ytp-ad-text');
-      for (const el of allClickables) {
-        if (el.textContent && el.textContent.includes('Skip') && el.offsetWidth > 0 && el.offsetHeight > 0) {
-          const isAdSkip = el.closest('.ytp-ad-module') ||
-                          el.closest('.video-ads') ||
-                          el.closest('[class*="ad-"]') ||
-                          (el.className && el.className.includes('ad'));
+      // Also check for "Skip Ads" text button (newer YouTube UI)
+      const skipButtons = document.querySelectorAll('button');
+      for (const btn of skipButtons) {
+        if (btn.textContent.includes('Skip') && btn.offsetWidth > 0 && btn.offsetHeight > 0) {
+          const isAdSkip = btn.closest('.ytp-ad-module') ||
+                          btn.closest('.video-ads') ||
+                          btn.className.includes('ad');
           if (isAdSkip) {
             console.log('[Parachord] 🚫 Found skip button by text, clicking...');
-            el.click();
+            btn.click();
             return true;
           }
         }
-      }
-
-      // Try to close overlay ads
-      const overlayClose = document.querySelector('.ytp-ad-overlay-close-button') ||
-                           document.querySelector('.ytp-ad-overlay-close-container button');
-      if (overlayClose && overlayClose.offsetWidth > 0 && overlayClose.offsetHeight > 0) {
-        console.log('[Parachord] 🚫 Found overlay ad close button, clicking...');
-        overlayClose.click();
-        return true;
       }
 
       return false;
@@ -375,25 +252,12 @@
       }
 
       // Track video duration (excluding ads)
-      let lastSentDuration = 0;
       media.addEventListener('durationchange', () => {
         checkVideoChange();
         // Only update duration when not showing an ad
         if (!isAdPlaying() && media.duration > 0 && isFinite(media.duration)) {
           videoDuration = media.duration;
-          const roundedDuration = Math.round(videoDuration);
           console.log('[Parachord] Video duration:', videoDuration);
-
-          // Send duration to desktop app (only if it changed significantly)
-          if (roundedDuration !== lastSentDuration && roundedDuration > 0) {
-            lastSentDuration = roundedDuration;
-            chrome.runtime.sendMessage({
-              type: 'event',
-              event: 'duration',
-              site: site,
-              duration: roundedDuration
-            }).catch(() => {});
-          }
         }
       });
 
@@ -501,33 +365,8 @@
     } else {
       window.addEventListener('load', setupYouTubeAdSkipper);
     }
-  } else if (site === 'bandcamp') {
-    // For Bandcamp, start auto-play attempt after page is ready
-    // The audio element may not exist until play is clicked
-    console.log('[Parachord] Bandcamp detected, scheduling auto-play...');
-
-    // Try multiple approaches since timing can vary
-    setTimeout(() => {
-      console.log('[Parachord] First auto-play attempt (1s)');
-      autoPlayBandcamp();
-    }, 1000);
-
-    setTimeout(() => {
-      console.log('[Parachord] Second auto-play attempt (2s)');
-      autoPlayBandcamp();
-    }, 2000);
-
-    // Also try when DOM is fully ready
-    if (document.readyState === 'complete') {
-      console.log('[Parachord] DOM already complete, trying auto-play now');
-      setTimeout(() => autoPlayBandcamp(), 100);
-    } else {
-      window.addEventListener('load', () => {
-        console.log('[Parachord] Window load event, trying auto-play');
-        setTimeout(() => autoPlayBandcamp(), 500);
-      });
-    }
   }
+  // NOTE: Bandcamp auto-play removed - now using embedded player in Electron window
 
   waitForMedia((media) => {
     setupMediaListeners(media);
@@ -804,12 +643,25 @@
             const trackName = titleEl.textContent.trim();
             const trackArtist = artistEl ? artistEl.textContent.trim() : '';
 
+            // Extract duration from playlist item
+            let duration = 0;
+            const durationEl = item.querySelector('.time') ||
+                              item.querySelector('.track_time') ||
+                              item.querySelector('[class*="duration"]') ||
+                              item.querySelector('[class*="time"]');
+            if (durationEl) {
+              const match = durationEl.textContent.trim().match(/(\d+):(\d+)/);
+              if (match) {
+                duration = parseInt(match[1]) * 60 + parseInt(match[2]);
+              }
+            }
+
             if (trackName && trackArtist) {
               tracks.push({
                 title: trackName,
                 artist: trackArtist,
                 album: '',
-                duration: 0,
+                duration: duration,
                 position: index + 1,
                 url: trackUrl // Include Bandcamp URL if found
               });
